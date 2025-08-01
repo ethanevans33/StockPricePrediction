@@ -88,3 +88,24 @@ test_rmse = root_mean_squared_error(Y_test[:, 0], Y_test_pred[:, 0])
 
 train_rmse
 test_rmse
+
+fig = plt.figure(figsize=(12, 10))
+gs = fig.add_gridspec(4, 1)
+ax1 = fig.add_subplot(gs[:3, 0])
+ax1.plot(df.iloc[-len(Y_test):].index, Y_test, color = 'blue', label = 'Actual price')
+ax1.plot(df.iloc[-len(Y_test):].index, Y_test_pred, color = 'green', label = 'Predicted price')
+ax1.legend()
+plt.title(f"{ticker} Stock Price Prediction")
+plt.xlabel('Date')
+plt.ylabel('Price')
+
+ax2 = fig.add_subplot(gs[3, 0])
+ax2.axhline(test_rmse, color = 'blue', linestyle='--', label='RMSE')
+ax2.plot(df[-len(Y_test):].index, abs(Y_test - Y_test_pred), 'r', label = 'Prediction Error')
+ax2.legend()
+plt.title('Prediction Error')
+plt.xlabel('Date')
+plt.ylabel('Error')
+
+plt.tight_layout()
+#plt.savefig('AAPL_Prediction.png')
