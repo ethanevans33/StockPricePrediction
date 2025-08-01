@@ -31,10 +31,10 @@ data = np.array(data)
 
 train_size = int(0.8 * len(data))
 
-X_train = torch.from_numpy(data[:train_size, :-1, :])
-Y_train = torch.from_numpy(data[:train_size, -1, :])
-X_test = torch.from_numpy(data[train_size:, -1, :])
-Y_test = torch.from_numpy(data[train_size:, -1, :])
+X_train = torch.from_numpy(data[:train_size, :-1, :]).type(torch.Tensor).to(device)
+Y_train = torch.from_numpy(data[:train_size, -1, :]).type(torch.Tensor).to(device)
+X_test = torch.from_numpy(data[train_size:, -1, :]).type(torch.Tensor).to(device)
+Y_test = torch.from_numpy(data[train_size:, -1, :]).type(torch.Tensor).to(device)
 
 class PredictionModel(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_layers, output_dim):
@@ -54,3 +54,24 @@ class PredictionModel(nn.Module):
         out = self.fc(out[:, -1, :])
 
         return out
+
+model = PredictionModel(input_dim=1, hidden_dim=32, num_layers=2, output_dim=1).to(device)
+
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters()). lr=0.01
+
+num_epochs = 200
+
+for i in range(num_epochs):
+    y_train_pred = model(X_train)
+
+    loss = criterion(y_train_pred, Y_train)
+
+    if i % 25 == 0:
+        print(i, loss.item())
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+
