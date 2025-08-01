@@ -15,7 +15,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ticker = 'AAPL'
 df = yf.download(ticker, '2020-01-01')
 df.Close.plot(figsize=(12, 8))
-plt.savefig('AAPL_Close.png')
+#plt.savefig('AAPL_Close.png')
 
 scaler = StandardScaler()
 df['Close'] = scaler.fit_transform(df['Close'])
@@ -33,7 +33,7 @@ train_size = int(0.8 * len(data))
 
 X_train = torch.from_numpy(data[:train_size, :-1, :]).type(torch.Tensor).to(device)
 Y_train = torch.from_numpy(data[:train_size, -1, :]).type(torch.Tensor).to(device)
-X_test = torch.from_numpy(data[train_size:, -1, :]).type(torch.Tensor).to(device)
+X_test = torch.from_numpy(data[train_size:, :-1, :]).type(torch.Tensor).to(device)
 Y_test = torch.from_numpy(data[train_size:, -1, :]).type(torch.Tensor).to(device)
 
 class PredictionModel(nn.Module):
@@ -46,7 +46,7 @@ class PredictionModel(nn.Module):
         self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_dim, output_dim)
 
-    def foward(self, x):
+    def forward(self, x):
         h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim, device=device)
         c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim, device=device)
 
@@ -58,14 +58,14 @@ class PredictionModel(nn.Module):
 model = PredictionModel(input_dim=1, hidden_dim=32, num_layers=2, output_dim=1).to(device)
 
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters()). lr=0.01
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 num_epochs = 200
 
 for i in range(num_epochs):
-    y_train_pred = model(X_train)
+    Y_train_pred = model(X_train)
 
-    loss = criterion(y_train_pred, Y_train)
+    loss = criterion(Y_train_pred, Y_train)
 
     if i % 25 == 0:
         print(i, loss.item())
@@ -74,4 +74,17 @@ for i in range(num_epochs):
     loss.backward()
     optimizer.step()
 
+model.eval()
 
+Y_test_pred = model(X_test)
+
+Y_train_pred = scaler.inverse_transform(Y_train_pred.detach().cpu().numpy())
+Y_train = scaler.inverse_transform(Y_train.detach().cpu().numpy())
+Y_test_pred = scaler.inverse_transform(Y_test_pred.detach().cpu().numpy())
+Y_test = scaler.inverse_transform(Y_test.detach().cpu().numpy())
+
+train_rmse = root_mean_squared_error(Y_train[:, 0], Y_train_pred[:, 0])
+test_rmse = root_mean_squared_error(Y_test[:, 0], Y_test_pred[:, 0])
+
+train_rmse
+test_rmse
